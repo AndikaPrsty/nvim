@@ -1,6 +1,6 @@
 # 🚀 Personal Neovim Configuration
 
-A clean, modular, and high-performance Neovim configuration powered by [`lazy.nvim`](https://github.com/folke/lazy.nvim), featuring [`fzf-lua`](https://github.com/ibhagwan/fzf-lua) with LazyVim-style keybindings, native Neovim 0.11+ LSP setup for TypeScript & Vue, and modern editing utilities.
+A clean, modular, and high-performance Neovim configuration powered by [`lazy.nvim`](https://github.com/folke/lazy.nvim), featuring [`fzf-lua`](https://github.com/ibhagwan/fzf-lua) with LazyVim-style keybindings, [`snacks.nvim`](https://github.com/folke/snacks.nvim) QoL suite, native Neovim 0.11+ LSP setup for TypeScript & Vue, and modern editing utilities.
 
 ---
 
@@ -17,6 +17,7 @@ A clean, modular, and high-performance Neovim configuration powered by [`lazy.nv
     │   └── options.lua      # Editor options (relative numbers, etc.)
     └── plugins/
         ├── fzf-lua.lua      # fzf-lua fuzzy finder & LazyVim-like keybindings
+        ├── snacks.lua       # snacks.nvim (dashboard, terminal, lazygit, notifier, etc.)
         └── spec1.lua        # LSP, completion, UI, editing, & utility plugins
 ```
 
@@ -73,22 +74,58 @@ A clean, modular, and high-performance Neovim configuration powered by [`lazy.nv
 
 ---
 
-### 🐙 Git Integration (`<leader>g`)
+### 🐙 Git (`<leader>g`) & Lazygit (`snacks.nvim` + `fzf-lua`)
 
 | Keybinding | Mode | Description | Action / Command |
 | :--- | :---: | :--- | :--- |
-| `<leader>gc` | `n` | Git Commits | `FzfLua git_commits` |
-| `<leader>gs` | `n` | Git Status | `FzfLua git_status` |
-| `<leader>gb` | `n` | Git Branches | `FzfLua git_branches` |
-| `<leader>gS` | `n` | Git Stash | `FzfLua git_stash` |
+| `<leader>gg` | `n` | Open Lazygit | `Snacks.lazygit()` |
+| `<leader>gB` | `n` | Open Git Repo in Browser | `Snacks.gitbrowse()` |
+| `<leader>gf` | `n` | Lazygit Current File History | `Snacks.lazygit.log_file()` |
+| `<leader>gl` | `n` | Lazygit Log | `Snacks.lazygit.log()` |
+| `<leader>gc` | `n` | Git Commits (Picker) | `FzfLua git_commits` |
+| `<leader>gs` | `n` | Git Status (Picker) | `FzfLua git_status` |
+| `<leader>gb` | `n` | Git Branches (Picker) | `FzfLua git_branches` |
+| `<leader>gS` | `n` | Git Stash (Picker) | `FzfLua git_stash` |
 
 ---
 
-### 🎨 UI & Colorschemes
+### 🍿 Snacks.nvim QoL Features & File Manager
 
 | Keybinding | Mode | Description | Action / Command |
 | :--- | :---: | :--- | :--- |
-| `<leader>uC` | `n` | Colorschemes (Live Preview) | `FzfLua colorschemes` |
+| `<leader>e` | `n` | File Explorer (Left Sidebar) | `Snacks.explorer()` |
+| `<leader>fe` | `n` | File Explorer (Root Dir) | `Snacks.explorer()` |
+| `<leader>E` | `n` | File Explorer (cwd) | `Snacks.explorer({ cwd = vim.uv.cwd() })` |
+| `<C-/>` / `<C-_>` | `n` | Toggle Floating Terminal | `Snacks.terminal()` |
+| `<leader>bd` | `n` | Close / Delete Current Buffer | `Snacks.bufdelete()` |
+| `<leader>bo` | `n` | Delete Other Buffers | `Snacks.bufdelete.other()` |
+| `<leader>bD` | `n` | Force Delete Current Buffer | `Snacks.bufdelete({ force = true })` |
+| `<leader>.` | `n` | Toggle Scratch Buffer | `Snacks.scratch()` |
+| `<leader>S` | `n` | Select / List Scratch Buffers | `Snacks.scratch.select()` |
+| `<leader>z` | `n` | Toggle Zen Mode (Distraction-Free) | `Snacks.zen()` |
+| `<leader>Z` | `n` | Toggle Zoom Current Window | `Snacks.zen.zoom()` |
+| `<leader>cR` | `n` | Rename File (LSP-aware) | `Snacks.rename.rename_file()` |
+| `<leader>n` | `n` | Notification History | `Snacks.notifier.show_history()` |
+| `<leader>un` | `n` | Dismiss All Notifications | `Snacks.notifier.hide()` |
+| `]]` | `n`, `t` | Jump to Next Word / LSP Reference | `Snacks.words.jump(1)` |
+| `[[` | `n`, `t` | Jump to Prev Word / LSP Reference | `Snacks.words.jump(-1)` |
+
+---
+
+### 🎛️ UI & Toggle Options (`<leader>u`)
+
+| Keybinding | Mode | Description |
+| :--- | :---: | :--- |
+| `<leader>ud` | `n` | Toggle Diagnostics |
+| `<leader>ul` | `n` | Toggle Line Numbers |
+| `<leader>uL` | `n` | Toggle Relative Numbering |
+| `<leader>uw` | `n` | Toggle Line Wrap |
+| `<leader>us` | `n` | Toggle Spell Checker |
+| `<leader>ug` | `n` | Toggle Indent Guides |
+| `<leader>uh` | `n` | Toggle Inlay Hints |
+| `<leader>uT` | `n` | Toggle Treesitter Highlight |
+| `<leader>uD` | `n` | Toggle Dim Inactive Code |
+| `<leader>uC` | `n` | Colorschemes (Live Preview via `fzf-lua`) |
 
 ---
 
@@ -119,6 +156,7 @@ A clean, modular, and high-performance Neovim configuration powered by [`lazy.nv
 | Category | Plugin | Purpose |
 | :--- | :--- | :--- |
 | **Package Manager** | [`folke/lazy.nvim`](https://github.com/folke/lazy.nvim) | Fast, modern plugin management |
+| **QoL & Utilities** | [`folke/snacks.nvim`](https://github.com/folke/snacks.nvim) | Terminal, lazygit, notifier, smooth scroll, indent lines, zen mode, scratch buffer |
 | **Fuzzy Finder** | [`ibhagwan/fzf-lua`](https://github.com/ibhagwan/fzf-lua) | Blazing fast search for files, grep, git, and symbols |
 | **LSP** | [`neovim/nvim-lspconfig`](https://github.com/neovim/nvim-lspconfig) | Native Neovim LSP configurations |
 | | [`williamboman/mason.nvim`](https://github.com/williamboman/mason.nvim) | Package manager for LSP servers, DAP servers, linters, and formatters |
@@ -150,8 +188,8 @@ To manage or install additional language servers:
 
 ## 📋 System Requirements & Recommended Tools
 
-For the best experience, the following external tools are recommended:
-
-* **Ripgrep** (`rg`): Used for ultra-fast grep searches (`brew install ripgrep`)
-* **FD** (`fd`): Fast alternative to `find` (`brew install fd`)
-* **Nerd Font**: For icons in files and UI (e.g., *JetBrainsMono Nerd Font*)
+* **Ripgrep** (`rg`): Fast grep search (`brew install ripgrep`)
+* **FZF** (`fzf`): Command-line fuzzy finder (`brew install fzf`)
+* **FD** (`fd`): Fast file finder (`brew install fd`)
+* **Lazygit**: Terminal UI for git (`brew install lazygit`)
+* **Nerd Font**: For icons in files, statuscolumn, and UI (e.g., *JetBrainsMono Nerd Font*)
