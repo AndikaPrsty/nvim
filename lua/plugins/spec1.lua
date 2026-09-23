@@ -1,24 +1,9 @@
 return {
-  -- the colorscheme should be available when starting Neovim
-  -- {
-  --   "folke/tokyonight.nvim",
-  --   lazy = false, -- make sure we load this during startup if it is your main colorscheme
-  --   priority = 1000, -- make sure to load this before all the other start plugins
-  --   config = function()
-  --     -- load the colorscheme here
-  --     vim.cmd([[colorscheme tokyonight]])
-  --   end,
-  -- },
-
-  -- I have a separate config.mappings file where I require which-key.
-  -- With lazy the plugin will be automatically loaded when it is required somewhere
   { "folke/which-key.nvim", lazy = true },
 
   {
     "nvim-neorg/neorg",
-    -- lazy-load on filetype
     ft = "norg",
-    -- options for neorg. This will automatically call `require("neorg").setup(opts)`
     opts = {
       load = {
         ["core.defaults"] = {},
@@ -28,35 +13,93 @@ return {
 
   {
     "dstein64/vim-startuptime",
-    -- lazy-load on a command
     cmd = "StartupTime",
-    -- init is called during startup. Configuration for vim plugins typically should be set in an init function
     init = function()
       vim.g.startuptime_tries = 10
     end,
   },
 
   {
-    "hrsh7th/nvim-cmp",
-    -- load cmp on InsertEnter
-    event = "InsertEnter",
-    -- these dependencies will only be loaded when cmp loads
-    -- dependencies are always lazy-loaded unless specified otherwise
-    dependencies = {
-      "hrsh7th/cmp-nvim-lsp",
-      "hrsh7th/cmp-buffer",
+    "j-hui/fidget.nvim",
+    opts = {
+      notification = {
+        window = {
+          winblend = 0,
+        },
+      },
     },
-    config = function()
-      -- ...
+  },
+
+  {
+    "nvim-treesitter/nvim-treesitter",
+    branch = "master",
+    build = ":TSUpdate",
+    event = { "BufReadPost", "BufNewFile" },
+    cmd = { "TSUpdate", "TSInstall", "TSLog" },
+    opts = {
+      highlight = { enable = true },
+      indent = { enable = true },
+      ensure_installed = {
+        "bash",
+        "html",
+        "javascript",
+        "json",
+        "lua",
+        "markdown",
+        "markdown_inline",
+        "typescript",
+        "tsx",
+        "vue",
+        "yaml",
+      },
+    },
+    config = function(_, opts)
+      require("nvim-treesitter.configs").setup(opts)
     end,
   },
 
-  -- if some code requires a module from an unloaded plugin, it will be automatically loaded.
-  -- So for api plugins like devicons, we can always set lazy=true
-  { "nvim-tree/nvim-web-devicons", lazy = true },
+  {
+    "hrsh7th/nvim-cmp",
+    event = "InsertEnter",
+    dependencies = {
+      "hrsh7th/cmp-nvim-lsp",
+      "hrsh7th/cmp-buffer",
+      "hrsh7th/cmp-path",
+    },
+    config = function()
+      local cmp = require("cmp")
+      cmp.setup({
+        mapping = cmp.mapping.preset.insert({
+          ["<C-b>"] = cmp.mapping.scroll_docs(-4),
+          ["<C-f>"] = cmp.mapping.scroll_docs(4),
+          ["<C-Space>"] = cmp.mapping.complete(),
+          ["<C-e>"] = cmp.mapping.abort(),
+          ["<CR>"] = cmp.mapping.confirm({ select = true }),
+          ["<Tab>"] = cmp.mapping(function(fallback)
+            if cmp.visible() then
+              cmp.select_next_item()
+            else
+              fallback()
+            end
+          end, { "i", "s" }),
+          ["<S-Tab>"] = cmp.mapping(function(fallback)
+            if cmp.visible() then
+              cmp.select_prev_item()
+            else
+              fallback()
+            end
+          end, { "i", "s" }),
+        }),
+        sources = cmp.config.sources({
+          { name = "nvim_lsp" },
+          { name = "buffer" },
+          { name = "path" },
+        }),
+      })
+    end,
+  },
 
-  -- you can use the VeryLazy event for things that can
-  -- load later and are not important for the initial UI
+  { "nvim-tree/nvim-web-devicons", lazy = true },
   { "stevearc/dressing.nvim", event = "VeryLazy" },
 
   {
@@ -69,55 +112,156 @@ return {
 
   {
     "monaqa/dial.nvim",
-    -- lazy-load on keys
-    -- mode is `n` by default. For more advanced options, check the section on key mappings
     keys = { "<C-a>", { "<C-x>", mode = "n" } },
   },
+
   {
     "neovim/nvim-lspconfig",
+    event = { "BufReadPre", "BufNewFile" },
     dependencies = {
       "williamboman/mason.nvim",
       "williamboman/mason-lspconfig.nvim",
+      "hrsh7th/cmp-nvim-lsp",
     },
     config = function()
-      require("mason").setup()
-      
-      -- Use the new names: ts_ls and vue_ls
-      require("mason-lspconfig").setup({
-        ensure_installed = { "ts_ls", "vue_ls" },
+      local lspconfig = require("lspconfig")
+      local mason = require("mason")
+      local mason_lspconfig = require("mason-lspconfig")
+
+      mason.setup()
+      mason_lspconfig.setup({
+        ensure_installed = { "vtsls", "vue_ls" },
+        automatic_installation = true,
       })
 
-      local mason_registry = require("mason-registry")
-      local vue_language_server_path = mason_registry.get_package("vue-language-server"):get_install_path() .. "/node_modules/@vue/language-server"
+      -- Disable ts_ls: we use vtsls instead (it is faster and has Vue plugin support)
+      if vim.lsp.enable then
+        vim.lsp.enable("ts_ls", false)
+      end
 
-      -- Neovim 0.11+ Native LSP Setup (No more require('lspconfig') warnings)
-      if vim.lsp.config then
-        
-        -- 1. Configure the TypeScript Language Server
-        vim.lsp.config.ts_ls = {
-          filetypes = { "typescript", "javascript", "javascriptreact", "typescriptreact", "vue" },
-          init_options = {
-            plugins = {
-              {
-                name = "@vue/typescript-plugin",
-                location = vue_language_server_path,
-                languages = { "vue" },
+      -- Setup LSP Capabilities for nvim-cmp
+      local capabilities = vim.lsp.protocol.make_client_capabilities()
+      local ok_cmp, cmp_nvim_lsp = pcall(require, "cmp_nvim_lsp")
+      if ok_cmp then
+        capabilities = cmp_nvim_lsp.default_capabilities(capabilities)
+      end
+
+      -- Locate Vue Language Server for TS plugin
+      local mason_registry = require("mason-registry")
+      local vue_language_server_path = ""
+      if mason_registry.is_installed("vue-language-server") then
+        vue_language_server_path = mason_registry.get_package("vue-language-server"):get_install_path()
+          .. "/node_modules/@vue/language-server"
+      else
+        vue_language_server_path = vim.fn.stdpath("data")
+          .. "/mason/packages/vue-language-server/node_modules/@vue/language-server"
+      end
+
+      -- 1. Configure vtsls (Fast TypeScript server + Vue hybrid integration)
+      lspconfig.vtsls.setup({
+        capabilities = capabilities,
+        filetypes = {
+          "javascript",
+          "javascriptreact",
+          "javascript.jsx",
+          "typescript",
+          "typescriptreact",
+          "typescript.tsx",
+          "vue",
+        },
+        settings = {
+          typescript = {
+            tsserver = {
+              maxTsServerMemory = 4000,
+            },
+          },
+          vtsls = {
+            autoUseWorkspaceTsdk = false,
+            experimental = {
+              workspaceDiagnostics = false,
+            },
+            tsserver = {
+              globalPlugins = {
+                {
+                  name = "@vue/typescript-plugin",
+                  location = vue_language_server_path,
+                  languages = { "vue" },
+                  configNamespace = "typescript",
+                  enableForWorkspaceTypeScriptVersions = true,
+                },
               },
             },
           },
-        }
+        },
+      })
 
-        -- 2. Enable both servers using their modern names
-        vim.lsp.enable("ts_ls")
-        vim.lsp.enable("vue_ls")
-      end
+      -- 2. Configure Vue Language Server (vue_ls)
+      lspconfig.vue_ls.setup({
+        capabilities = capabilities,
+        filetypes = { "vue" },
+      })
+
+      -- 3. Global LSP Keybindings on LspAttach
+      vim.api.nvim_create_autocmd("LspAttach", {
+        group = vim.api.nvim_create_augroup("UserLspConfig", { clear = true }),
+        callback = function(event)
+          local map = function(keys, func, desc)
+            vim.keymap.set("n", keys, func, { buffer = event.buf, desc = "LSP: " .. desc })
+          end
+
+          -- Helper to use fzf-lua if available, fallback to vim.lsp.buf
+          local has_fzf, fzf = pcall(require, "fzf-lua")
+
+          map("gd", function()
+            if has_fzf then
+              fzf.lsp_definitions({ jump1 = true })
+            else
+              vim.lsp.buf.definition()
+            end
+          end, "Goto Definition")
+
+          map("gr", function()
+            if has_fzf then
+              fzf.lsp_references({ jump1 = true, ignore_current_line = true })
+            else
+              vim.lsp.buf.references()
+            end
+          end, "Goto References")
+
+          map("gI", function()
+            if has_fzf then
+              fzf.lsp_implementations({ jump1 = true })
+            else
+              vim.lsp.buf.implementation()
+            end
+          end, "Goto Implementation")
+
+          map("gy", function()
+            if has_fzf then
+              fzf.lsp_typedefs({ jump1 = true })
+            else
+              vim.lsp.buf.type_definition()
+            end
+          end, "Goto Type Definition")
+
+          map("gD", vim.lsp.buf.declaration, "Goto Declaration")
+          map("K", vim.lsp.buf.hover, "Hover Documentation")
+          map("gK", vim.lsp.buf.signature_help, "Signature Help")
+          map("<leader>cr", vim.lsp.buf.rename, "Rename Symbol")
+
+          map("<leader>ca", function()
+            if has_fzf then
+              fzf.lsp_code_actions()
+            else
+              vim.lsp.buf.code_action()
+            end
+          end, "Code Action")
+
+          map("<leader>cd", vim.diagnostic.open_float, "Line Diagnostics")
+          map("[d", vim.diagnostic.goto_prev, "Previous Diagnostic")
+          map("]d", vim.diagnostic.goto_next, "Next Diagnostic")
+        end,
+      })
     end,
-  }
-  -- local plugins need to be explicitly configured with dir
-  -- { dir = "~/projects/secret.nvim" },
-
-  -- local plugins can also be configured with the dev option.
-  -- This will use {config.dev.path}/noice.nvim/ instead of fetching it from GitHub
-  -- With the dev option, you can easily switch between the local and installed version of a plugin
-  -- { "folke/noice.nvim", dev = true },
+  },
 }

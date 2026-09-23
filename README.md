@@ -161,6 +161,7 @@ A clean, modular, and high-performance Neovim configuration powered by [`lazy.nv
 | **LSP** | [`neovim/nvim-lspconfig`](https://github.com/neovim/nvim-lspconfig) | Native Neovim LSP configurations |
 | | [`williamboman/mason.nvim`](https://github.com/williamboman/mason.nvim) | Package manager for LSP servers, DAP servers, linters, and formatters |
 | | [`williamboman/mason-lspconfig.nvim`](https://github.com/williamboman/mason-lspconfig.nvim) | Bridge between `mason.nvim` and `nvim-lspconfig` |
+| | [`j-hui/fidget.nvim`](https://github.com/j-hui/fidget.nvim) | Visual LSP progress & loading indicator spinner |
 | **Autocompletion** | [`hrsh7th/nvim-cmp`](https://github.com/hrsh7th/nvim-cmp) | Extensible completion engine with buffer and LSP sources |
 | **Code Editing** | [`Wansmer/treesj`](https://github.com/Wansmer/treesj) | Tree-sitter powered split/join for code structures |
 | | [`monaqa/dial.nvim`](https://github.com/monaqa/dial.nvim) | Enhanced increment/decrement tool |
@@ -170,14 +171,31 @@ A clean, modular, and high-performance Neovim configuration powered by [`lazy.nv
 | | [`nvim-tree/nvim-web-devicons`](https://github.com/nvim-tree/nvim-web-devicons) | Filetype icons |
 | **Performance** | [`dstein64/vim-startuptime`](https://github.com/dstein64/vim-startuptime) | Measure and profile startup time (`:StartupTime`) |
 
+### 🧬 LSP Keybindings (Active in any LSP Buffer)
+
+| Keybinding | Mode | Description | Action / Command |
+| :--- | :---: | :--- | :--- |
+| `gd` | `n` | Goto Definition | `vim.lsp.buf.definition()` |
+| `gD` | `n` | Goto Declaration | `vim.lsp.buf.declaration()` |
+| `gr` | `n` | Goto References | `vim.lsp.buf.references()` |
+| `gI` | `n` | Goto Implementation | `vim.lsp.buf.implementation()` |
+| `gy` | `n` | Goto Type Definition | `vim.lsp.buf.type_definition()` |
+| `K` | `n` | Hover Documentation | `vim.lsp.buf.hover()` |
+| `gK` | `n` | Signature Help | `vim.lsp.buf.signature_help()` |
+| `<leader>ca` | `n` | Code Action | `vim.lsp.buf.code_action()` |
+| `<leader>cr` | `n` | Rename Symbol | `vim.lsp.buf.rename()` |
+| `<leader>cd` | `n` | Show Line Diagnostics | `vim.diagnostic.open_float()` |
+| `[d` | `n` | Previous Diagnostic | `vim.diagnostic.goto_prev()` |
+| `]d` | `n` | Next Diagnostic | `vim.diagnostic.goto_next()` |
+
 ---
 
 ## 🛠️ Language Server Protocol (LSP) Configuration
 
-The configuration uses Neovim 0.11+ native LSP integration with automatic Mason installation:
+The configuration uses Neovim native LSP integration with automatic Mason installation:
 
-* **TypeScript / JavaScript**: `ts_ls` (configured with `@vue/typescript-plugin` to enable full TypeScript support inside Vue single-file components)
-* **Vue 3**: `vue_ls` (`@vue/language-server`)
+* **TypeScript / JavaScript**: `vtsls` (with `maxTsServerMemory = 4000`, `workspaceDiagnostics = false`, and `@vue/typescript-plugin` hybrid mode)
+* **Vue 3**: `vue_ls` (`volar` / `@vue/language-server`)
 
 To manage or install additional language servers:
 ```vim
